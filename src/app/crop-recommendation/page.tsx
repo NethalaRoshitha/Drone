@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Sprout, TestTube2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const formSchema = z.object({
   nitrogen: z.number().min(0).max(140),
@@ -116,37 +117,43 @@ export default function CropRecommendationPage() {
             <CardContent>
                 {loading && <RecommendationSkeleton />}
                 {result && !loading && (
-                <div className="space-y-4">
-                    <div>
-                        <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
-                            <Sprout className="h-5 w-5 mr-2" />
-                            Recommended Crop
-                        </h3>
-                        <p className="text-2xl font-bold bg-primary/10 text-primary p-3 rounded-md text-center">{result.recommended_crop}</p>
-                    </div>
-                    
-                    <div>
-                        <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
-                            <TestTube2 className="h-5 w-5 mr-2" />
-                            Suggested Fertilizer
-                        </h3>
-                        <p className="text-lg bg-gray-100 p-3 rounded-md dark:bg-gray-800">{result.fertilizer}</p>
-                    </div>
-                    <div>
-                        <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
-                            <Sparkles className="h-5 w-5 mr-2" />
-                            Cultivation Tips
-                        </h3>
-                        <div className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap dark:bg-gray-800">
-                          {result.tips.split('*').filter(tip => tip.trim()).map((tip, index) => (
-                            <p key={index} className="flex items-start">
-                              <span className="mr-2">&#8226;</span>
-                              <span>{tip.trim()}</span>
-                            </p>
-                          ))}
-                        </div>
-                    </div>
-                </div>
+                  <Accordion type="single" collapsible className="w-full">
+                    {result.recommendations.map((rec, index) => (
+                      <AccordionItem value={`item-${index}`} key={index}>
+                        <AccordionTrigger className="text-xl font-bold text-primary">
+                          <div className="flex items-center">
+                            <Sprout className="h-6 w-6 mr-3" />
+                            {rec.crop_name}
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4 pl-2">
+                            <div>
+                              <h4 className="flex items-center text-lg font-semibold mb-2">
+                                <TestTube2 className="h-5 w-5 mr-2" />
+                                Suggested Fertilizer
+                              </h4>
+                              <p className="text-base bg-gray-100 p-3 rounded-md dark:bg-gray-800">{rec.fertilizer}</p>
+                            </div>
+                            <div>
+                              <h4 className="flex items-center text-lg font-semibold mb-2">
+                                <Sparkles className="h-5 w-5 mr-2" />
+                                Cultivation Tips
+                              </h4>
+                              <div className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap dark:bg-gray-800">
+                                {rec.tips.split('*').filter(tip => tip.trim()).map((tip, tipIndex) => (
+                                  <p key={tipIndex} className="flex items-start">
+                                    <span className="mr-2">&#8226;</span>
+                                    <span>{tip.trim()}</span>
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                 )}
                 {!result && !loading && (
                 <div className="text-center text-muted-foreground py-12">
@@ -193,19 +200,10 @@ function SliderField({ name, label, min, max, step, unit, form }: { name: keyof 
 
 function RecommendationSkeleton() {
   return (
-    <div className="space-y-6">
-      <div>
-        <Skeleton className="h-7 w-48 mb-2" />
-        <Skeleton className="h-16 w-full" />
-      </div>
-      <div>
-        <Skeleton className="h-7 w-48 mb-2" />
+    <div className="space-y-4">
         <Skeleton className="h-12 w-full" />
-      </div>
-      <div>
-        <Skeleton className="h-7 w-48 mb-2" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
     </div>
   );
 }

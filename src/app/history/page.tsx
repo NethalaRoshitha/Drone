@@ -9,13 +9,14 @@ import { format } from 'date-fns';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardFooter, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Sprout, Microscope, Trash2 } from 'lucide-react';
+import { Loader2, Sprout, Microscope, Trash2, TestTube2, Sparkles } from 'lucide-react';
 import type { CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
 import type { GeneratePlantDiseaseCureOutput } from '@/ai/flows/plant-disease-cure-generator';
 import { WithId } from '@/firebase/firestore/use-collection';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 type CropRecommendationHistory = {
@@ -147,37 +148,114 @@ function RecommendationCard({ item }: { item: WithId<CropRecommendationHistory> 
         }
     };
 
+    // Backwards compatibility for old data structure
+    if (!output.recommendations) {
+        // @ts-ignore
+        const oldOutput = output as { recommended_crop: string, fertilizer: string, tips: string };
+        return (
+            <Card className='bg-background'>
+                <CardHeader>
+                    <CardTitle className='text-lg'>Crop: {oldOutput.recommended_crop}</CardTitle>
+                    <CardDescription>
+                        {createdAt ? format(createdAt.toDate(), 'PPP p') : 'Date not available'}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className='grid grid-cols-1 md:grid-cols-2 gap-4 text-sm'>
+                    <div className="md:col-span-1">
+                        <h4 className="font-semibold mb-2">Inputs</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                            <li>Nitrogen: {inputs.nitrogen}</li>
+                            <li>Phosphorus: {inputs.phosphorus}</li>
+                            <li>Potassium: {inputs.potassium}</li>
+                            <li>Temperature: {inputs.temperature}°C</li>
+                            <li>Humidity: {inputs.humidity}%</li>
+                            <li>pH: {inputs.ph}</li>
+                            <li>Rainfall: {inputs.rainfall}mm</li>
+                        </ul>
+                    </div>
+                    <div className="md:col-span-1 space-y-4">
+                        <div>
+                            <h4 className="font-semibold">Fertilizer</h4>
+                            <p>{oldOutput.fertilizer}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Tips</h4>
+                            <p className='whitespace-pre-wrap'>{oldOutput.tips}</p>
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete this history item.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardFooter>
+            </Card>
+        )
+    }
+
     return (
         <Card className='bg-background'>
             <CardHeader>
-                <CardTitle className='text-lg'>Crop: {output.recommended_crop}</CardTitle>
+                <CardTitle className='text-lg'>Crop Recommendations</CardTitle>
                 <CardDescription>
                     {createdAt ? format(createdAt.toDate(), 'PPP p') : 'Date not available'}
                 </CardDescription>
             </CardHeader>
-            <CardContent className='grid grid-cols-1 md:grid-cols-2 gap-4 text-sm'>
-                 <div className="md:col-span-1">
+            <CardContent className='space-y-4 text-sm'>
+                 <div>
                     <h4 className="font-semibold mb-2">Inputs</h4>
-                    <ul className="list-disc list-inside space-y-1">
-                        <li>Nitrogen: {inputs.nitrogen}</li>
-                        <li>Phosphorus: {inputs.phosphorus}</li>
-                        <li>Potassium: {inputs.potassium}</li>
+                    <ul className="list-disc list-inside space-y-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+                        <li>Nitrogen: {inputs.nitrogen} kg/ha</li>
+                        <li>Phosphorus: {inputs.phosphorus} kg/ha</li>
+                        <li>Potassium: {inputs.potassium} kg/ha</li>
                         <li>Temperature: {inputs.temperature}°C</li>
                         <li>Humidity: {inputs.humidity}%</li>
                         <li>pH: {inputs.ph}</li>
-                        <li>Rainfall: {inputs.rainfall}mm</li>
+                        <li>Rainfall: {inputs.rainfall} mm</li>
                     </ul>
                 </div>
-                <div className="md:col-span-1 space-y-4">
-                    <div>
-                        <h4 className="font-semibold">Fertilizer</h4>
-                        <p>{output.fertilizer}</p>
-                    </div>
-                    <div>
-                        <h4 className="font-semibold">Tips</h4>
-                        <p className='whitespace-pre-wrap'>{output.tips}</p>
-                    </div>
-                </div>
+
+                <Accordion type="single" collapsible className="w-full">
+                    {output.recommendations.map((rec, index) => (
+                        <AccordionItem value={`item-${index}`} key={index}>
+                            <AccordionTrigger className="text-lg font-semibold text-primary">
+                                <div className="flex items-center">
+                                    <Sprout className="h-5 w-5 mr-2" />
+                                    {rec.crop_name}
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-4 pl-2">
+                                    <div>
+                                        <h4 className="flex items-center font-semibold"><TestTube2 className="h-4 w-4 mr-2" />Suggested Fertilizer</h4>
+                                        <p className="whitespace-pre-wrap pl-6 text-muted-foreground">{rec.fertilizer}</p>
+                                    </div>
+                                    <div>
+                                        <h4 className="flex items-center font-semibold"><Sparkles className="h-4 w-4 mr-2" />Cultivation Tips</h4>
+                                        <p className="whitespace-pre-wrap pl-6 text-muted-foreground">{rec.tips}</p>
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
             </CardContent>
             <CardFooter className="flex justify-end">
                 <AlertDialog>

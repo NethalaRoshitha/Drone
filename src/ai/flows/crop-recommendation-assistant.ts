@@ -21,10 +21,14 @@ const CropRecommendationInputSchema = z.object({
 });
 export type CropRecommendationInput = z.infer<typeof CropRecommendationInputSchema>;
 
+const RecommendedCropSchema = z.object({
+    crop_name: z.string().describe("The name of a suitable crop."),
+    fertilizer: z.string().describe("The appropriate fertilizer to use for this specific crop."),
+    tips: z.string().describe("Actionable cultivation tips for this crop, with each tip starting with a bullet point and on a new line."),
+});
+
 const CropRecommendationOutputSchema = z.object({
-  recommended_crop: z.string().describe('The most suitable crop for the given conditions.'),
-  fertilizer: z.string().describe('The appropriate fertilizer to use for the recommended crop.'),
-  tips: z.string().describe('Actionable cultivation tips for the recommended crop, with each tip starting with a bullet point and on a new line.'),
+  recommendations: z.array(RecommendedCropSchema).describe("A list of suitable crop recommendations based on the given conditions."),
 });
 export type CropRecommendationOutput = z.infer<typeof CropRecommendationOutputSchema>;
 
@@ -38,7 +42,7 @@ const cropRecommendationPrompt = ai.definePrompt({
   name: 'cropRecommendationPrompt',
   input: {schema: CropRecommendationInputSchema},
   output: {schema: CropRecommendationOutputSchema},
-  prompt: `You are an expert agricultural assistant specializing in crop recommendation and cultivation. Your task is to analyze the provided environmental parameters and recommend the most suitable crop, suggest an appropriate fertilizer, and offer actionable cultivation tips tailored to these specific conditions. Each tip in the 'tips' field should start with a bullet point (e.g., '*') and be on a new line.
+  prompt: `You are an expert agricultural assistant specializing in crop recommendation and cultivation. Your task is to analyze the provided environmental parameters and recommend a list of suitable crops. For each recommended crop, suggest an appropriate fertilizer, and offer actionable cultivation tips tailored to these specific conditions. Each tip in the 'tips' field should start with a bullet point (e.g., '*') and be on a new line.
 
 Environmental Parameters:
 - Nitrogen (N): {{{nitrogen}}}
@@ -49,7 +53,7 @@ Environmental Parameters:
 - pH: {{{ph}}}
 - Rainfall: {{{rainfall}}} mm
 
-Based on these parameters, provide a recommendation in the exact JSON format specified by the output schema, ensuring all fields are accurately filled.`,
+Based on these parameters, provide a list of recommendations in the exact JSON format specified by the output schema, ensuring all fields are accurately filled.`,
 });
 
 const cropRecommendationFlow = ai.defineFlow(
