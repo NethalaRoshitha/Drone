@@ -155,14 +155,14 @@ export default function PlantDiseasePage() {
                     <HeartPulse className="h-5 w-5 mr-2" />
                     Cure Instructions
                   </h3>
-                  <p className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap">{result.cureInstructions}</p>
+                  <p className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap dark:bg-gray-800">{result.cureInstructions}</p>
                 </div>
                 <div>
                   <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
                     <ShieldCheck className="h-5 w-5 mr-2" />
                     Prevention Tips
                   </h3>
-                  <p className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap">{result.preventionTips}</p>
+                  <p className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap dark:bg-gray-800">{result.preventionTips}</p>
                 </div>
               </div>
             )}

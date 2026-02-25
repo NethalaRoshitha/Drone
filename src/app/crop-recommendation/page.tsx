@@ -14,6 +14,7 @@ import { Loader2, Sparkles, Sprout, TestTube2, Zap } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { placeholderImages } from '@/lib/placeholder-images';
+import { Separator } from '@/components/ui/separator';
 
 export default function CropRecommendationPage() {
   const [result, setResult] = useState<CropRecommendationOutput | null>(null);
@@ -69,11 +70,15 @@ export default function CropRecommendationPage() {
     }
   }
 
+  const isValidUrl = (url: string | undefined | null): url is string => {
+    return !!(url && (url.startsWith('http://') || url.startsWith('https://')));
+  }
+
   return (
     <div className="flex flex-col flex-1">
       <PageHeader title="Crop Recommendation" />
-      <div className="flex-1 p-4 md:p-8 grid gap-8 md:grid-cols-2 items-start">
-        <Card>
+      <div className="flex-1 p-4 md:p-8 grid gap-8 md:grid-cols-1 items-start justify-items-center">
+        <Card className="w-full max-w-3xl">
           <CardHeader>
             <CardTitle>Get Your Recommendation</CardTitle>
             <CardDescription>Click the button below. Our AI will analyze simulated environmental conditions to recommend the perfect crop for a sample scenario.</CardDescription>
@@ -84,9 +89,9 @@ export default function CropRecommendationPage() {
               Get Crop Recommendation
             </Button>
           </CardContent>
-        </Card>
 
-        <Card>
+          <Separator className="my-4" />
+
           <CardHeader>
             <CardTitle>AI Recommendation</CardTitle>
             <CardDescription>Our AI-powered analysis will appear here.</CardDescription>
@@ -106,11 +111,11 @@ export default function CropRecommendationPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <h4 className="font-semibold mb-2 text-center">Seed</h4>
-                        <Image src={result.seedImageUrl || seedPlaceholder} alt={`${result.recommended_crop} seed`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="seed" />
+                        <Image src={isValidUrl(result.seedImageUrl) ? result.seedImageUrl : seedPlaceholder} alt={`${result.recommended_crop} seed`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="seed" />
                     </div>
                     <div>
                         <h4 className="font-semibold mb-2 text-center">Product</h4>
-                         <Image src={result.productImageUrl || productPlaceholder} alt={`${result.recommended_crop} product`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="vegetable harvest" />
+                         <Image src={isValidUrl(result.productImageUrl) ? result.productImageUrl : productPlaceholder} alt={`${result.recommended_crop} product`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="vegetable harvest" />
                     </div>
                 </div>
 
@@ -120,7 +125,7 @@ export default function CropRecommendationPage() {
                             <Zap className="h-5 w-5 mr-2" />
                             Based on Conditions
                         </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm bg-gray-100 p-3 rounded-md">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm bg-gray-100 p-3 rounded-md dark:bg-gray-800">
                             <p><strong>N:</strong> {lastInputs.nitrogen}</p>
                             <p><strong>P:</strong> {lastInputs.phosphorus}</p>
                             <p><strong>K:</strong> {lastInputs.potassium}</p>
@@ -137,14 +142,14 @@ export default function CropRecommendationPage() {
                     <TestTube2 className="h-5 w-5 mr-2" />
                     Suggested Fertilizer
                   </h3>
-                  <p className="text-lg bg-gray-100 p-3 rounded-md">{result.fertilizer}</p>
+                  <p className="text-lg bg-gray-100 p-3 rounded-md dark:bg-gray-800">{result.fertilizer}</p>
                 </div>
                 <div>
                   <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
                     <Sparkles className="h-5 w-5 mr-2" />
                     Cultivation Tips
                   </h3>
-                  <p className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap">{result.tips}</p>
+                  <p className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap dark:bg-gray-800">{result.tips}</p>
                 </div>
               </div>
             )}
