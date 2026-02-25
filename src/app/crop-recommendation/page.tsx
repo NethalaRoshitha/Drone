@@ -1,34 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
+import type { CropRecommendationInput, CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
 import { getRecommendation } from './actions';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Sprout, TestTube2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const formSchema = z.object({
-  nitrogen: z.coerce.number().min(0, "Must be non-negative").max(200, "Value seems high"),
-  phosphorus: z.coerce.number().min(0, "Must be non-negative").max(200, "Value seems high"),
-  potassium: z.coerce.number().min(0, "Must be non-negative").max(200, "Value seems high"),
-  temperature: z.coerce.number().min(-50, "Temperature too low").max(60, "Temperature too high"),
-  humidity: z.coerce.number().min(0, "Must be non-negative").max(100, "Must be a percentage"),
-  ph: z.coerce.number().min(0, "pH must be between 0 and 14").max(14, "pH must be between 0 and 14"),
-  rainfall: z.coerce.number().min(0, "Must be non-negative"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
 
 export default function CropRecommendationPage() {
   const [result, setResult] = useState<CropRecommendationOutput | null>(null);
@@ -37,23 +20,25 @@ export default function CropRecommendationPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      nitrogen: 50,
-      phosphorus: 50,
-      potassium: 50,
-      temperature: 25,
-      humidity: 80,
-      ph: 6.5,
-      rainfall: 200,
-    },
-  });
+  const generateSimulatedData = (): CropRecommendationInput => {
+    return {
+        nitrogen: parseFloat((Math.random() * 140).toFixed(2)),
+        phosphorus: parseFloat((Math.random() * 140 + 5).toFixed(2)),
+        potassium: parseFloat((Math.random() * 200 + 5).toFixed(2)),
+        temperature: parseFloat((Math.random() * 30 + 10).toFixed(2)),
+        humidity: parseFloat((Math.random() * 70 + 30).toFixed(2)),
+        ph: parseFloat((Math.random() * 3 + 5.5).toFixed(2)),
+        rainfall: parseFloat((Math.random() * 200 + 30).toFixed(2)),
+    };
+  };
 
-  async function onSubmit(values: FormValues) {
+  async function handleGetRecommendation() {
     setLoading(true);
     setResult(null);
-    const response = await getRecommendation(values);
+    
+    const simulatedValues = generateSimulatedData();
+
+    const response = await getRecommendation(simulatedValues);
     setLoading(false);
     
     if (response.error) {
@@ -66,7 +51,7 @@ export default function CropRecommendationPage() {
       setResult(response.data);
       if (user && firestore) {
         const historyData = {
-          inputs: values,
+          inputs: simulatedValues,
           output: response.data,
           userId: user.uid,
           createdAt: serverTimestamp(),
@@ -83,39 +68,14 @@ export default function CropRecommendationPage() {
       <div className="flex-1 p-4 md:p-8 grid gap-8 md:grid-cols-2 items-start">
         <Card>
           <CardHeader>
-            <CardTitle>Environmental Data</CardTitle>
-            <CardDescription>Enter the values for your soil and climate conditions to get a crop recommendation.</CardDescription>
+            <CardTitle>Get Your Recommendation</CardTitle>
+            <CardDescription>Click the button below. Our AI will analyze simulated environmental conditions to recommend the perfect crop for a sample scenario.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <FormField control={form.control} name="nitrogen" render={({ field }) => (
-                  <FormItem><FormLabel>Nitrogen (N) in soil</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="phosphorus" render={({ field }) => (
-                  <FormItem><FormLabel>Phosphorus (P) in soil</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="potassium" render={({ field }) => (
-                  <FormItem><FormLabel>Potassium (K) in soil</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="temperature" render={({ field }) => (
-                  <FormItem><FormLabel>Temperature (°C)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="humidity" render={({ field }) => (
-                  <FormItem><FormLabel>Humidity (%)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="ph" render={({ field }) => (
-                  <FormItem><FormLabel>Soil pH</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="rainfall" render={({ field }) => (
-                  <FormItem><FormLabel>Rainfall (mm)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <Button type="submit" disabled={loading} className="w-full sm:col-span-2 bg-accent hover:bg-accent/90 text-accent-foreground">
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Recommend Crop
-                </Button>
-              </form>
-            </Form>
+            <Button onClick={handleGetRecommendation} disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-6">
+              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+              Get Crop Recommendation
+            </Button>
           </CardContent>
         </Card>
 
@@ -154,7 +114,7 @@ export default function CropRecommendationPage() {
             {!result && !loading && (
               <div className="text-center text-muted-foreground py-12">
                 <Sparkles className="h-12 w-12 mx-auto mb-4" />
-                <p>Your crop recommendation will be shown here once you submit the form.</p>
+                <p>Your crop recommendation will be shown here once you request it.</p>
               </div>
             )}
           </CardContent>
