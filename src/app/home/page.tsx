@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Leaf, ScanSearch, LogOut } from 'lucide-react';
 import { AgriSmartLogo } from '@/components/icons';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -27,6 +27,7 @@ const features = [
 
 export default function HomePage() {
   const auth = useAuth();
+  const { user } = useUser();
   const router = useRouter();
 
   const handleSignOut = () => {
@@ -44,6 +45,7 @@ export default function HomePage() {
       </Button>
       <div className="w-full max-w-4xl">
         <header className="text-center mb-12">
+          {user && <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">Hello {user.displayName || 'User'} 👋</h1>}
           <div className="inline-block mb-4">
             <AgriSmartLogo className="h-20 w-20" />
           </div>

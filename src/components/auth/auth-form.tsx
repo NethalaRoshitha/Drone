@@ -14,14 +14,19 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn, UserPlus } from 'lucide-react';
 import { AgriSmartLogo } from '@/components/icons';
 import { useAuth } from '@/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
-const formSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters long.' }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+const signupSchema = z.object({
+  username: z.string().min(3, { message: 'Username must be at least 3 characters long.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters long.' }),
+});
+
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
@@ -33,21 +38,27 @@ export function AuthForm({ mode }: AuthFormProps) {
   const { toast } = useToast();
   const auth = useAuth();
 
-  const form = useForm<FormValues>({
+  const formSchema = mode === 'login' ? loginSchema : signupSchema;
+
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
       password: '',
+      ...(mode === 'signup' && { username: '' }),
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
       if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
+        const loginValues = values as z.infer<typeof loginSchema>;
+        await signInWithEmailAndPassword(auth, loginValues.email, loginValues.password);
       } else {
-        await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const signupValues = values as z.infer<typeof signupSchema>;
+        const userCredential = await createUserWithEmailAndPassword(auth, signupValues.email, signupValues.password);
+        await updateProfile(userCredential.user, { displayName: signupValues.username });
       }
       toast({
         title: mode === 'login' ? 'Login Successful' : 'Sign Up Successful',
@@ -80,6 +91,21 @@ export function AuthForm({ mode }: AuthFormProps) {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {mode === 'signup' && (
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="yourname" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="email"
