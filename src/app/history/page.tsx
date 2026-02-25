@@ -136,10 +136,15 @@ function RecommendationCard({ item }: { item: WithId<CropRecommendationHistory> 
                         <li>Rainfall: {inputs.rainfall}mm</li>
                     </ul>
                 </div>
-                <div className="md:col-span-1">
-                    <h4 className="font-semibold mb-2">AI Output</h4>
-                     <p><strong>Fertilizer:</strong> {output.fertilizer}</p>
-                    <p className='mt-2'><strong>Tips:</strong> {output.tips}</p>
+                <div className="md:col-span-1 space-y-4">
+                    <div>
+                        <h4 className="font-semibold">Fertilizer</h4>
+                        <p>{output.fertilizer}</p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold">Tips</h4>
+                        <p className='whitespace-pre-wrap'>{output.tips}</p>
+                    </div>
                 </div>
             </CardContent>
         </Card>
