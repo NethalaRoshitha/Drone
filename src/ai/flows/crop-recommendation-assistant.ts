@@ -24,7 +24,7 @@ export type CropRecommendationInput = z.infer<typeof CropRecommendationInputSche
 const CropRecommendationOutputSchema = z.object({
   recommended_crop: z.string().describe('The most suitable crop for the given conditions.'),
   fertilizer: z.string().describe('The appropriate fertilizer to use for the recommended crop.'),
-  tips: z.string().describe('Actionable cultivation tips for the recommended crop, with each tip on a new line.'),
+  tips: z.string().describe('Actionable cultivation tips for the recommended crop, with each tip starting with a bullet point and on a new line.'),
 });
 export type CropRecommendationOutput = z.infer<typeof CropRecommendationOutputSchema>;
 
@@ -38,7 +38,7 @@ const cropRecommendationPrompt = ai.definePrompt({
   name: 'cropRecommendationPrompt',
   input: {schema: CropRecommendationInputSchema},
   output: {schema: CropRecommendationOutputSchema},
-  prompt: `You are an expert agricultural assistant specializing in crop recommendation and cultivation. Your task is to analyze the provided environmental parameters and recommend the most suitable crop, suggest an appropriate fertilizer, and offer actionable cultivation tips tailored to these specific conditions. Each tip in the 'tips' field should be on a new line.
+  prompt: `You are an expert agricultural assistant specializing in crop recommendation and cultivation. Your task is to analyze the provided environmental parameters and recommend the most suitable crop, suggest an appropriate fertilizer, and offer actionable cultivation tips tailored to these specific conditions. Each tip in the 'tips' field should start with a bullet point (e.g., '*') and be on a new line.
 
 Environmental Parameters:
 - Nitrogen (N): {{{nitrogen}}}
