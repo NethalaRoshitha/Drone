@@ -68,6 +68,7 @@ export default function PlantDiseasePage() {
         setResult(response.data);
         if (user && firestore) {
           const historyData = {
+            photoDataUri: base64data,
             output: response.data,
             userId: user.uid,
             createdAt: serverTimestamp(),

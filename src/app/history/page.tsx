@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, orderBy, query } from 'firebase/firestore';
 import { format } from 'date-fns';
@@ -20,6 +21,7 @@ type CropRecommendationHistory = {
 };
 
 type DiseaseDetectionHistory = {
+  photoDataUri: string;
   output: GeneratePlantDiseaseCureOutput;
   createdAt: { toDate: () => Date };
 };
@@ -143,7 +145,7 @@ function RecommendationCard({ item }: { item: WithId<CropRecommendationHistory> 
 }
 
 function DetectionCard({ item }: { item: WithId<DiseaseDetectionHistory> }) {
-    const { output, createdAt } = item;
+    const { output, createdAt, photoDataUri } = item;
     return (
         <Card className='bg-background'>
             <CardHeader>
@@ -152,14 +154,26 @@ function DetectionCard({ item }: { item: WithId<DiseaseDetectionHistory> }) {
                     {createdAt ? format(createdAt.toDate(), 'PPP p') : 'Date not available'}
                 </CardDescription>
             </CardHeader>
-            <CardContent className='space-y-2 text-sm'>
-                <div>
-                    <h4 className="font-semibold">Cure Instructions</h4>
-                    <p>{output.cureInstructions}</p>
-                </div>
-                <div>
-                    <h4 className="font-semibold">Prevention Tips</h4>
-                    <p>{output.preventionTips}</p>
+            <CardContent className='grid grid-cols-1 md:grid-cols-2 gap-4 text-sm'>
+                {photoDataUri && (
+                    <div className="relative aspect-video rounded-lg overflow-hidden border">
+                        <Image
+                            src={photoDataUri}
+                            alt={`Detected disease: ${output.disease}`}
+                            fill
+                            className="object-cover"
+                        />
+                    </div>
+                )}
+                <div className='space-y-2'>
+                    <div>
+                        <h4 className="font-semibold">Cure Instructions</h4>
+                        <p>{output.cureInstructions}</p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold">Prevention Tips</h4>
+                        <p>{output.preventionTips}</p>
+                    </div>
                 </div>
             </CardContent>
         </Card>

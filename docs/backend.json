@@ -79,7 +79,7 @@
     },
     "DiseaseDetection": {
       "title": "Disease Detection",
-      "description": "Represents a single plant disease detection event, including the AI-generated diagnosis.",
+      "description": "Represents a single plant disease detection event, including the user-uploaded image and the AI-generated diagnosis.",
       "type": "object",
       "properties": {
         "userId": {
@@ -90,6 +90,10 @@
           "type": "string",
           "format": "date-time",
           "description": "Timestamp of when the detection was performed."
+        },
+        "photoDataUri": {
+          "type": "string",
+          "description": "The data URI of the uploaded plant image."
         },
         "output": {
           "type": "object",
@@ -102,7 +106,7 @@
           }
         }
       },
-      "required": ["userId", "createdAt", "output"]
+      "required": ["userId", "createdAt", "output", "photoDataUri"]
     }
   },
   "auth": {
