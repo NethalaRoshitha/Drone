@@ -5,6 +5,18 @@
       "description": "A placeholder image for the plant disease detection feature.",
       "imageUrl": "https://images.unsplash.com/photo-1643262201267-9bdda9da5f7b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwbGFudCUyMGxlYWZ8ZW58MHx8fHwxNzcxOTMxNzQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "plant leaf"
+    },
+    {
+      "id": "crop-seed-placeholder",
+      "description": "A placeholder image for a crop's seed.",
+      "imageUrl": "https://images.unsplash.com/photo-1586201375822-52c6724c3936?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzZWVkc3xlbnwwfHx8fDE3MTk2MDQwODF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "seeds package"
+    },
+    {
+      "id": "crop-product-placeholder",
+      "description": "A placeholder image for a harvested crop.",
+      "imageUrl": "https://images.unsplash.com/photo-1562222839-195c89b7473d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx2ZWdldGFibGUlMjBoYXJ2ZXN0fGVufDB8fHx8MTcxOTU5ODYzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vegetable harvest"
     }
   ]
 }

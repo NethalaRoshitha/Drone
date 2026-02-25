@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import type { CropRecommendationInput, CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
 import { getRecommendation } from './actions';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
@@ -9,16 +10,21 @@ import { collection, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Sprout, TestTube2 } from 'lucide-react';
+import { Loader2, Sparkles, Sprout, TestTube2, Zap } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { placeholderImages } from '@/lib/placeholder-images';
 
 export default function CropRecommendationPage() {
   const [result, setResult] = useState<CropRecommendationOutput | null>(null);
+  const [lastInputs, setLastInputs] = useState<CropRecommendationInput | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
+
+  const seedPlaceholder = placeholderImages.find(p => p.id === 'crop-seed-placeholder')?.imageUrl || 'https://picsum.photos/seed/seed/200/200';
+  const productPlaceholder = placeholderImages.find(p => p.id === 'crop-product-placeholder')?.imageUrl || 'https://picsum.photos/seed/product/200/200';
 
   const generateSimulatedData = (): CropRecommendationInput => {
     return {
@@ -37,6 +43,7 @@ export default function CropRecommendationPage() {
     setResult(null);
     
     const simulatedValues = generateSimulatedData();
+    setLastInputs(simulatedValues);
 
     const response = await getRecommendation(simulatedValues);
     setLoading(false);
@@ -95,6 +102,36 @@ export default function CropRecommendationPage() {
                   </h3>
                   <p className="text-2xl font-bold bg-primary/10 text-primary p-3 rounded-md text-center">{result.recommended_crop}</p>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <h4 className="font-semibold mb-2 text-center">Seed</h4>
+                        <Image src={result.seedImageUrl || seedPlaceholder} alt={`${result.recommended_crop} seed`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="seed" />
+                    </div>
+                    <div>
+                        <h4 className="font-semibold mb-2 text-center">Product</h4>
+                         <Image src={result.productImageUrl || productPlaceholder} alt={`${result.recommended_crop} product`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="vegetable harvest" />
+                    </div>
+                </div>
+
+                {lastInputs && (
+                    <div>
+                        <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
+                            <Zap className="h-5 w-5 mr-2" />
+                            Based on Conditions
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm bg-gray-100 p-3 rounded-md">
+                            <p><strong>N:</strong> {lastInputs.nitrogen}</p>
+                            <p><strong>P:</strong> {lastInputs.phosphorus}</p>
+                            <p><strong>K:</strong> {lastInputs.potassium}</p>
+                            <p><strong>Temp:</strong> {lastInputs.temperature}°C</p>
+                            <p><strong>Humidity:</strong> {lastInputs.humidity}%</p>
+                            <p><strong>pH:</strong> {lastInputs.ph}</p>
+                            <p><strong>Rainfall:</strong> {lastInputs.rainfall}mm</p>
+                        </div>
+                    </div>
+                )}
+
                 <div>
                   <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
                     <TestTube2 className="h-5 w-5 mr-2" />
@@ -130,6 +167,14 @@ function RecommendationSkeleton() {
       <div>
         <Skeleton className="h-7 w-48 mb-2" />
         <Skeleton className="h-16 w-full" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+      <div>
+        <Skeleton className="h-7 w-48 mb-2" />
+        <Skeleton className="h-20 w-full" />
       </div>
       <div>
         <Skeleton className="h-7 w-48 mb-2" />

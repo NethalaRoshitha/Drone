@@ -25,6 +25,8 @@ const CropRecommendationOutputSchema = z.object({
   recommended_crop: z.string().describe('The most suitable crop for the given conditions.'),
   fertilizer: z.string().describe('The appropriate fertilizer to use for the recommended crop.'),
   tips: z.string().describe('Actionable cultivation tips for the recommended crop.'),
+  seedImageUrl: z.string().url().describe("A URL for an image of the recommended crop's seed."),
+  productImageUrl: z.string().url().describe("A URL for an image of the final harvested crop product."),
 });
 export type CropRecommendationOutput = z.infer<typeof CropRecommendationOutputSchema>;
 
@@ -40,6 +42,8 @@ const cropRecommendationPrompt = ai.definePrompt({
   output: {schema: CropRecommendationOutputSchema},
   prompt: `You are an expert agricultural assistant specializing in crop recommendation and cultivation. Your task is to analyze the provided environmental parameters and recommend the most suitable crop, suggest an appropriate fertilizer, and offer actionable cultivation tips tailored to these specific conditions.
 
+Also, provide URLs for two images: one of the crop's seed and one of the final harvested product. Ensure these URLs point to valid, publicly accessible images.
+
 Environmental Parameters:
 - Nitrogen (N): {{{nitrogen}}}
 - Phosphorus (P): {{{phosphorus}}}
@@ -49,7 +53,7 @@ Environmental Parameters:
 - pH: {{{ph}}}
 - Rainfall: {{{rainfall}}} mm
 
-Based on these parameters, provide a recommendation in the exact JSON format specified by the output schema, ensuring the 'recommended_crop', 'fertilizer', and 'tips' fields are accurately filled.`,
+Based on these parameters, provide a recommendation in the exact JSON format specified by the output schema, ensuring all fields are accurately filled.`,
 });
 
 const cropRecommendationFlow = ai.defineFlow(
