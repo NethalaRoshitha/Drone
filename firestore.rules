@@ -1,0 +1,147 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership security model. All
+ * user-generated data is exclusively owned by and accessible to the user who created it.
+ * Access control is based on the authenticated user's UID.
+ *
+ * Data Structure: The data is organized hierarchically under a top-level `/users`
+ * collection. Each user's data, including their profile and related subcollections
+ * (like crop recommendations and disease detections), is nested under a document
+ * whose ID matches their Firebase Authentication UID (e.g., `/users/{userId}/...`).
+ *
+ * Key Security Decisions:
+ * - Default Deny: All paths are closed by default. Access must be explicitly granted.
+ * - No Public Access: There are no publicly readable collections. A user must be
+ *   authenticated to access any data.
+ * - No User Listing: It is not possible to query or list the top-level `/users`
+ *   collection, preventing enumeration of all application users.
+ * - Path-Based Security: Ownership is primarily determined by matching the authenticated
+ *   user's UID (`request.auth.uid`) with the `{userId}` wildcard in the document path.
+ *
+ * Denormalization for Authorization: To ensure fast and secure authorization, subcollection
+ * documents (e.g., a crop recommendation) are expected to contain a denormalized `userId`
+ * field. This allows rules to verify ownership directly on the document without needing
+ * slow and costly `get()` calls to parent documents.
+ *
+ * Structural Segregation: All user-private data is strictly segregated into a
+ * user-specific document tree (`/users/{userId}`). This structure naturally prevents
+ * data leakage and makes list operations inherently secure, as a user can only query
+ * paths that already contain their own UID.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the primary function for verifying resource ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update and delete
+     * operations to prevent acting on non-existent data.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates required ownership fields when a user profile is created.
+     * Ensures the document's internal ID matches the user's auth UID.
+     */
+    function isValidUserProfileCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Ensures critical ownership fields on a user profile cannot be changed after creation.
+     */
+    function isUserProfileImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * Validates required ownership fields when a subcollection document is created.
+     * Assumes a denormalized `userId` field for robust, independent authorization.
+     */
+    function isValidSubcollectionDocCreate(userId) {
+      // This rule assumes the client provides a `userId` field on the document
+      // that matches the user's auth UID.
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Ensures the denormalized ownership link on a subcollection document is immutable.
+     */
+    function isSubcollectionDocImmutable() {
+      // This rule allows for partial updates (client doesn't have to resend `userId`)
+      // while securely preventing the ownership link from ever being changed.
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to a user's own profile document.
+     * @path /users/{userId}
+     * @allow (get, update, delete) A signed-in user accessing their own profile document.
+     * @allow (create) A new user creating their own profile document for the first time.
+     * @deny (any) An authenticated user trying to read or write another user's profile.
+     * @deny (list) Any user, to prevent enumeration of the entire user base.
+     * @principle Restricts access to a user's own data tree and enforces self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidUserProfileCreate(userId);
+      allow update: if isExistingOwner(userId) && isUserProfileImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures a user's private collection of crop recommendations.
+     * @path /users/{userId}/cropRecommendations/{recommendationId}
+     * @allow (get, list, create, update, delete) A signed-in user managing their own crop recommendations.
+     * @deny (any) A user trying to access another user's recommendation history.
+     * @principle Enforces document ownership within a user-specific subcollection.
+     */
+    match /users/{userId}/cropRecommendations/{recommendationId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidSubcollectionDocCreate(userId);
+      allow update: if isExistingOwner(userId) && isSubcollectionDocImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures a user's private collection of plant disease detections.
+     * @path /users/{userId}/diseaseDetections/{detectionId}
+     * @allow (get, list, create, update, delete) A signed-in user managing their own disease detections.
+     * @deny (any) A user trying to access another user's detection history.
+     * @principle Enforces document ownership within a user-specific subcollection.
+     */
+    match /users/{userId}/diseaseDetections/{detectionId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidSubcollectionDocCreate(userId);
+      allow update: if isExistingOwner(userId) && isSubcollectionDocImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile information within the AgriSmart AI application. This entity stores non-authentication related user data, assuming an external authentication system handles credentials.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity. This ID is typically provided by the external authentication system (e.g., Firebase Authentication) and serves as the primary key."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's primary email address, used for identification and communication. (Relationship: UserProfile 1:1 Authentication Record)",
+          "format": "email"
+        },
+        "username": {
+          "type": "string",
+          "description": "A user-defined display name or unique identifier within the application."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "username",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores individual user profile documents. The document ID (`userId`) corresponds to the Firebase Authentication UID, ensuring path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching Firebase Authentication's UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/cropRecommendations/{recommendationId}",
+        "definition": {
+          "entityName": "CropRecommendation",
+          "schema": {
+            "$ref": "#/backend/entities/CropRecommendation"
+          },
+          "description": "Stores individual crop recommendation results and their inputs, owned by a specific user. Includes denormalized 'userId' field for robust authorization independence and easy querying.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who received the crop recommendation, matching Firebase Authentication's UID."
+            },
+            {
+              "name": "recommendationId",
+              "description": "The unique identifier for a specific crop recommendation record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/diseaseDetections/{detectionId}",
+        "definition": {
+          "entityName": "DiseaseDetection",
+          "schema": {
+            "$ref": "#/backend/entities/DiseaseDetection"
+          },
+          "description": "Stores individual plant disease detection results and their inputs, owned by a specific user. Includes denormalized 'userId' field for robust authorization independence and easy querying.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who performed the disease detection, matching Firebase Authentication's UID."
+            },
+            {
+              "name": "detectionId",
+              "description": "The unique identifier for a specific plant disease detection record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for AgriSmart AI prioritizes secure, scalable, and easily debuggable authorization, adhering strictly to the core design principles and mandates. \n\n**Authorization Independence (CRITICAL):** Authorization independence is achieved primarily through a path-based ownership model and explicit denormalization. For user-specific data like `UserProfile`, `CropRecommendation` history, and `DiseaseDetection` history, all documents are structured under a user's unique path (`/users/{userId}/...`). This ensures that `request.auth.uid` can be directly compared against the `{userId}` wildcard in the path, eliminating the need for `get()` calls to parent documents in security rules. Furthermore, for subcollections such as `cropRecommendations` and `diseaseDetections`, each document within these collections will explicitly include a `userId` field (denormalization). This field duplicates the owner's UID, allowing security rules to verify `request.auth.uid == userId` directly on the document being accessed, completely decoupling authorization from its parent collection's data and enabling atomic operations.\n\n**Clarity of Intent (Debuggability):** The `/users/{userId}/` hierarchy explicitly states that all data within this subtree belongs to and is primarily accessible by the user identified by `{userId}`. This makes the authorization intent immediately clear in security rules. For instance, a rule like `match /users/{userId}/cropRecommendations/{recommendationId}` can easily assert `allow read, write: if request.auth.uid == userId && resource.data.userId == userId;`, which is highly readable and debuggable.\n\n**DBAC (No Custom Claims):** Since no complex role-based access control beyond personal ownership is required by the current features, no dedicated roles collections are needed. Authorization relies solely on `request.auth.uid` matching the document owner's ID, which is either implicit in the path or explicit via a denormalized `userId` field.\n\n**QAPs (Rules are not Filters):** The structural segregation mandate ensures that each collection maintains a homogeneous security posture. \n- The `/users/{userId}` collection for `UserProfile` ensures that `list` operations (e.g., fetching all profiles, though not a common use case for individual users) are inherently secure as they would require specific UIDs. However, it's typically intended for `get` on `request.auth.uid`.\n- For `/users/{userId}/cropRecommendations` and `/users/{userId}/diseaseDetections`, `list` operations are securely handled because `request.auth.uid` must match the `{userId}` wildcard in the path. This means a user can only list *their own* recommendations or detections, directly satisfying the Queryability for Access Patterns (QAPs) principle without relying on rules to filter results. The denormalized `userId` field further reinforces this, ensuring consistency across path and document data. The structure guarantees that any query made to these collections from the client will already be scoped to the authenticated user, making the `list` operation efficient and secure.\n\n**Invariants:** Ownership is explicitly maintained through the path and denormalized `userId` field. Timestamps (`createdAt`, `updatedAt`) would be included in relevant documents to track data lifecycle."
+  }
+}
