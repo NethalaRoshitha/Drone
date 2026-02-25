@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import type { CropRecommendationInput, CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
 import { getRecommendation } from './actions';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
@@ -13,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Sprout, TestTube2, Zap } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { placeholderImages } from '@/lib/placeholder-images';
 import { Separator } from '@/components/ui/separator';
 
 export default function CropRecommendationPage() {
@@ -23,9 +21,6 @@ export default function CropRecommendationPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
-
-  const seedPlaceholder = placeholderImages.find(p => p.id === 'crop-seed-placeholder')?.imageUrl || 'https://picsum.photos/seed/seed/200/200';
-  const productPlaceholder = placeholderImages.find(p => p.id === 'crop-product-placeholder')?.imageUrl || 'https://picsum.photos/seed/product/200/200';
 
   const generateSimulatedData = (): CropRecommendationInput => {
     return {
@@ -70,10 +65,6 @@ export default function CropRecommendationPage() {
     }
   }
 
-  const isValidUrl = (url: string | undefined | null): url is string => {
-    return !!(url && (url.startsWith('http://') || url.startsWith('https://')));
-  }
-
   return (
     <div className="flex flex-col flex-1">
       <PageHeader title="Crop Recommendation" />
@@ -106,17 +97,6 @@ export default function CropRecommendationPage() {
                     Recommended Crop
                   </h3>
                   <p className="text-2xl font-bold bg-primary/10 text-primary p-3 rounded-md text-center">{result.recommended_crop}</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <h4 className="font-semibold mb-2 text-center">Seed</h4>
-                        <Image src={isValidUrl(result.seedImageUrl) ? result.seedImageUrl : seedPlaceholder} alt={`${result.recommended_crop} seed`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="seed" />
-                    </div>
-                    <div>
-                        <h4 className="font-semibold mb-2 text-center">Product</h4>
-                         <Image src={isValidUrl(result.productImageUrl) ? result.productImageUrl : productPlaceholder} alt={`${result.recommended_crop} product`} width={250} height={250} className="rounded-lg object-cover w-full aspect-square border" data-ai-hint="vegetable harvest" />
-                    </div>
                 </div>
 
                 {lastInputs && (
@@ -172,10 +152,6 @@ function RecommendationSkeleton() {
       <div>
         <Skeleton className="h-7 w-48 mb-2" />
         <Skeleton className="h-16 w-full" />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
       </div>
       <div>
         <Skeleton className="h-7 w-48 mb-2" />

@@ -114,8 +114,6 @@ function HistoryList<T>({ title, icon, items, renderItem, emptyMessage }: { titl
 
 function RecommendationCard({ item }: { item: WithId<CropRecommendationHistory> }) {
     const { inputs, output, createdAt } = item;
-    const seedPlaceholder = placeholderImages.find(p => p.id === 'crop-seed-placeholder')?.imageUrl || 'https://picsum.photos/seed/seed/200/200';
-    const productPlaceholder = placeholderImages.find(p => p.id === 'crop-product-placeholder')?.imageUrl || 'https://picsum.photos/seed/product/200/200';
 
     return (
         <Card className='bg-background'>
@@ -125,7 +123,7 @@ function RecommendationCard({ item }: { item: WithId<CropRecommendationHistory> 
                     {createdAt ? format(createdAt.toDate(), 'PPP p') : 'Date not available'}
                 </CardDescription>
             </CardHeader>
-            <CardContent className='grid grid-cols-1 md:grid-cols-3 gap-4 text-sm'>
+            <CardContent className='grid grid-cols-1 md:grid-cols-2 gap-4 text-sm'>
                  <div className="md:col-span-1">
                     <h4 className="font-semibold mb-2">Inputs</h4>
                     <ul className="list-disc list-inside space-y-1">
@@ -142,16 +140,6 @@ function RecommendationCard({ item }: { item: WithId<CropRecommendationHistory> 
                     <h4 className="font-semibold mb-2">AI Output</h4>
                      <p><strong>Fertilizer:</strong> {output.fertilizer}</p>
                     <p className='mt-2'><strong>Tips:</strong> {output.tips}</p>
-                </div>
-                <div className="md:col-span-1 grid grid-cols-2 gap-2">
-                    <div>
-                        <h5 className="font-semibold text-xs mb-1">Seed</h5>
-                        <Image src={output.seedImageUrl || seedPlaceholder} alt={`${output.recommended_crop} seed`} width={100} height={100} className="rounded-md object-cover w-full aspect-square border" data-ai-hint="seed"/>
-                    </div>
-                    <div>
-                        <h5 className="font-semibold text-xs mb-1">Product</h5>
-                         <Image src={output.productImageUrl || productPlaceholder} alt={`${output.recommended_crop} product`} width={100} height={100} className="rounded-md object-cover w-full aspect-square border" data-ai-hint="vegetable harvest"/>
-                    </div>
                 </div>
             </CardContent>
         </Card>
