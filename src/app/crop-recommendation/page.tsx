@@ -6,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
 import { getRecommendation } from './actions';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +34,8 @@ export default function CropRecommendationPage() {
   const [result, setResult] = useState<CropRecommendationOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -58,8 +62,18 @@ export default function CropRecommendationPage() {
         title: 'An error occurred',
         description: response.error,
       });
-    } else {
+    } else if (response.data) {
       setResult(response.data);
+      if (user && firestore) {
+        const historyData = {
+          inputs: values,
+          output: response.data,
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+        };
+        const recommendationsCollection = collection(firestore, 'users', user.uid, 'cropRecommendations');
+        addDocumentNonBlocking(recommendationsCollection, historyData);
+      }
     }
   }
 

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Leaf, ScanSearch, LogOut } from 'lucide-react';
+import { ArrowRight, Leaf, ScanSearch, LogOut, History } from 'lucide-react';
 import { AgriSmartLogo } from '@/components/icons';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -22,6 +22,13 @@ const features = [
     description: 'Upload an image of a plant to detect diseases and receive expert cure recommendations.',
     href: '/plant-disease-detection',
     cta: 'Analyze Plant',
+  },
+  {
+    icon: <History className="h-8 w-8 text-primary" />,
+    title: 'View History',
+    description: 'Review your past crop recommendations and disease detection results.',
+    href: '/history',
+    cta: 'View History',
   },
 ];
 
@@ -57,7 +64,7 @@ export default function HomePage() {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
             <Card key={feature.title} className="hover:shadow-xl transition-shadow duration-300 flex flex-col">
               <CardHeader className="flex-row items-start gap-4 space-y-0">

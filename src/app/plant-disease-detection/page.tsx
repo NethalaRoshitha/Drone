@@ -4,6 +4,8 @@ import { useState, useRef, type ChangeEvent } from 'react';
 import Image from 'next/image';
 import type { GeneratePlantDiseaseCureOutput } from '@/ai/flows/plant-disease-cure-generator';
 import { getDiseaseCure } from './actions';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +22,8 @@ export default function PlantDiseasePage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const firestore = useFirestore();
+  const { user } = useUser();
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -60,8 +64,17 @@ export default function PlantDiseasePage() {
           title: 'An error occurred',
           description: response.error,
         });
-      } else {
+      } else if (response.data) {
         setResult(response.data);
+        if (user && firestore) {
+          const historyData = {
+            output: response.data,
+            userId: user.uid,
+            createdAt: serverTimestamp(),
+          };
+          const detectionsCollection = collection(firestore, 'users', user.uid, 'diseaseDetections');
+          addDocumentNonBlocking(detectionsCollection, historyData);
+        }
       }
     };
     reader.onerror = () => {
