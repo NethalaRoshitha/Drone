@@ -45,7 +45,7 @@ export default function HomePage() {
       </Button>
       <div className="w-full max-w-4xl">
         <header className="text-center mb-12">
-          {user && <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">Hello {user.displayName || 'User'} 👋</h1>}
+          {user && <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">Hello {user.displayName || 'Roshitha'} 👋</h1>}
           <div className="inline-block mb-4">
             <AgriSmartLogo className="h-20 w-20" />
           </div>
@@ -64,6 +64,7 @@ export default function HomePage() {
                 {feature.icon}
                 <div className="flex-1">
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
+
                   <CardDescription>{feature.description}</CardDescription>
                 </div>
               </CardHeader>
