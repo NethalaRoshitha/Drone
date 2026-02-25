@@ -13,10 +13,9 @@ import { Loader2, Sprout, Microscope, Trash2 } from 'lucide-react';
 import type { CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
 import type { GeneratePlantDiseaseCureOutput } from '@/ai/flows/plant-disease-cure-generator';
 import { WithId } from '@/firebase/firestore/use-collection';
-import { placeholderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 type CropRecommendationHistory = {
