@@ -13,7 +13,14 @@ export async function getDiseaseCure(input: GeneratePlantDiseaseCureInput): Prom
     return { data: result };
   } catch (e) {
     console.error(e);
-    const errorMessage = e instanceof Error ? e.message : "An unexpected error occurred. Please try again.";
+    let errorMessage = "An unexpected error occurred. Please try again.";
+    if (e instanceof Error) {
+      if (e.message.includes('RESOURCE_EXHAUSTED') || e.message.includes('429')) {
+        errorMessage = "You've made too many requests in a short time. Please wait a moment before trying again.";
+      } else {
+        errorMessage = e.message;
+      }
+    }
     return { error: errorMessage };
   }
 }
