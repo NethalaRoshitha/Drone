@@ -1,47 +1,61 @@
 'use client';
 
 import { useState } from 'react';
-import type { CropRecommendationInput, CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+import type { CropRecommendationOutput } from '@/ai/flows/crop-recommendation-assistant';
 import { getRecommendation } from './actions';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Sprout, TestTube2, Zap } from 'lucide-react';
+import { Loader2, Sparkles, Sprout, TestTube2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
+
+const formSchema = z.object({
+  nitrogen: z.number().min(0).max(140),
+  phosphorus: z.number().min(5).max(145),
+  potassium: z.number().min(5).max(205),
+  temperature: z.number().min(0).max(50),
+  humidity: z.number().min(0).max(100),
+  ph: z.number().min(0).max(14),
+  rainfall: z.number().min(20).max(300),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 export default function CropRecommendationPage() {
   const [result, setResult] = useState<CropRecommendationOutput | null>(null);
-  const [lastInputs, setLastInputs] = useState<CropRecommendationInput | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const generateSimulatedData = (): CropRecommendationInput => {
-    return {
-        nitrogen: parseFloat((Math.random() * 140).toFixed(2)),
-        phosphorus: parseFloat((Math.random() * 140 + 5).toFixed(2)),
-        potassium: parseFloat((Math.random() * 200 + 5).toFixed(2)),
-        temperature: parseFloat((Math.random() * 30 + 10).toFixed(2)),
-        humidity: parseFloat((Math.random() * 70 + 30).toFixed(2)),
-        ph: parseFloat((Math.random() * 3 + 5.5).toFixed(2)),
-        rainfall: parseFloat((Math.random() * 200 + 30).toFixed(2)),
-    };
-  };
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      nitrogen: 70,
+      phosphorus: 75,
+      potassium: 105,
+      temperature: 25,
+      humidity: 50,
+      ph: 7,
+      rainfall: 160,
+    },
+  });
 
-  async function handleGetRecommendation() {
+  async function onSubmit(values: FormData) {
     setLoading(true);
     setResult(null);
-    
-    const simulatedValues = generateSimulatedData();
-    setLastInputs(simulatedValues);
 
-    const response = await getRecommendation(simulatedValues);
+    const response = await getRecommendation(values);
     setLoading(false);
     
     if (response.error) {
@@ -54,7 +68,7 @@ export default function CropRecommendationPage() {
       setResult(response.data);
       if (user && firestore) {
         const historyData = {
-          inputs: simulatedValues,
+          inputs: values,
           output: response.data,
           userId: user.uid,
           createdAt: serverTimestamp(),
@@ -68,81 +82,112 @@ export default function CropRecommendationPage() {
   return (
     <div className="flex flex-col flex-1">
       <PageHeader title="Crop Recommendation" />
-      <div className="flex-1 p-4 md:p-8 grid gap-8 md:grid-cols-1 items-start justify-items-center">
-        <Card className="w-full max-w-3xl">
+      <div className="flex-1 p-4 md:p-8 grid gap-8 md:grid-cols-2 items-start">
+        <Card className="w-full">
           <CardHeader>
-            <CardTitle>Get Your Recommendation</CardTitle>
-            <CardDescription>Click the button below. Our AI will analyze simulated environmental conditions to recommend the perfect crop for a sample scenario.</CardDescription>
+            <CardTitle>Enter Soil & Weather Conditions</CardTitle>
+            <CardDescription>Adjust the sliders to match your farm's conditions and get an AI-powered crop recommendation.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleGetRecommendation} disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-6">
-              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-              Get Crop Recommendation
-            </Button>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <SliderField name="nitrogen" label="Nitrogen (N)" min={0} max={140} step={1} unit="kg/ha" form={form} />
+                <SliderField name="phosphorus" label="Phosphorus (P)" min={5} max={145} step={1} unit="kg/ha" form={form} />
+                <SliderField name="potassium" label="Potassium (K)" min={5} max={205} step={1} unit="kg/ha" form={form} />
+                <SliderField name="temperature" label="Temperature" min={0} max={50} step={0.1} unit="°C" form={form} />
+                <SliderField name="humidity" label="Humidity" min={0} max={100} step={1} unit="%" form={form} />
+                <SliderField name="ph" label="Soil pH" min={0} max={14} step={0.1} unit="" form={form} />
+                <SliderField name="rainfall" label="Rainfall" min={20} max={300} step={1} unit="mm" form={form} />
+
+                <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-6">
+                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                  Get Crop Recommendation
+                </Button>
+              </form>
+            </Form>
           </CardContent>
-
-          <Separator className="my-4" />
-
-          <CardHeader>
-            <CardTitle>AI Recommendation</CardTitle>
-            <CardDescription>Our AI-powered analysis will appear here.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading && <RecommendationSkeleton />}
-            {result && !loading && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
-                    <Sprout className="h-5 w-5 mr-2" />
-                    Recommended Crop
-                  </h3>
-                  <p className="text-2xl font-bold bg-primary/10 text-primary p-3 rounded-md text-center">{result.recommended_crop}</p>
-                </div>
-
-                {lastInputs && (
+        </Card>
+        
+        <Card className="sticky top-8">
+            <CardHeader>
+                <CardTitle>AI Recommendation</CardTitle>
+                <CardDescription>Our AI-powered analysis will appear here.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {loading && <RecommendationSkeleton />}
+                {result && !loading && (
+                <div className="space-y-4">
                     <div>
                         <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
-                            <Zap className="h-5 w-5 mr-2" />
-                            Based on Conditions
+                            <Sprout className="h-5 w-5 mr-2" />
+                            Recommended Crop
                         </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm bg-gray-100 p-3 rounded-md dark:bg-gray-800">
-                            <p><strong>N:</strong> {lastInputs.nitrogen}</p>
-                            <p><strong>P:</strong> {lastInputs.phosphorus}</p>
-                            <p><strong>K:</strong> {lastInputs.potassium}</p>
-                            <p><strong>Temp:</strong> {lastInputs.temperature}°C</p>
-                            <p><strong>Humidity:</strong> {lastInputs.humidity}%</p>
-                            <p><strong>pH:</strong> {lastInputs.ph}</p>
-                            <p><strong>Rainfall:</strong> {lastInputs.rainfall}mm</p>
+                        <p className="text-2xl font-bold bg-primary/10 text-primary p-3 rounded-md text-center">{result.recommended_crop}</p>
+                    </div>
+                    
+                    <div>
+                        <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
+                            <TestTube2 className="h-5 w-5 mr-2" />
+                            Suggested Fertilizer
+                        </h3>
+                        <p className="text-lg bg-gray-100 p-3 rounded-md dark:bg-gray-800">{result.fertilizer}</p>
+                    </div>
+                    <div>
+                        <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
+                            <Sparkles className="h-5 w-5 mr-2" />
+                            Cultivation Tips
+                        </h3>
+                        <div className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap dark:bg-gray-800">
+                          {result.tips.split('*').filter(tip => tip.trim()).map((tip, index) => (
+                            <p key={index} className="flex items-start">
+                              <span className="mr-2">&#8226;</span>
+                              <span>{tip.trim()}</span>
+                            </p>
+                          ))}
                         </div>
                     </div>
+                </div>
                 )}
-
-                <div>
-                  <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
-                    <TestTube2 className="h-5 w-5 mr-2" />
-                    Suggested Fertilizer
-                  </h3>
-                  <p className="text-lg bg-gray-100 p-3 rounded-md dark:bg-gray-800">{result.fertilizer}</p>
+                {!result && !loading && (
+                <div className="text-center text-muted-foreground py-12">
+                    <Sparkles className="h-12 w-12 mx-auto mb-4" />
+                    <p>Your crop recommendation will be shown here once you submit the conditions.</p>
                 </div>
-                <div>
-                  <h3 className="flex items-center text-lg font-semibold text-primary mb-2">
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Cultivation Tips
-                  </h3>
-                  <p className="text-base bg-gray-100 p-3 rounded-md whitespace-pre-wrap dark:bg-gray-800">{result.tips}</p>
-                </div>
-              </div>
-            )}
-            {!result && !loading && (
-              <div className="text-center text-muted-foreground py-12">
-                <Sparkles className="h-12 w-12 mx-auto mb-4" />
-                <p>Your crop recommendation will be shown here once you request it.</p>
-              </div>
-            )}
-          </CardContent>
+                )}
+            </CardContent>
         </Card>
       </div>
     </div>
+  );
+}
+
+// Helper component for sliders to avoid repetition
+function SliderField({ name, label, min, max, step, unit, form }: { name: keyof FormData, label: string, min: number, max: number, step: number, unit: string, form: any }) {
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <div className="flex justify-between items-center">
+            <FormLabel>{label}</FormLabel>
+            <span className="text-sm font-medium text-primary bg-primary/10 px-2 py-1 rounded-md w-24 text-center">
+              {field.value.toFixed(step === 1 ? 0 : 1)} {unit}
+            </span>
+          </div>
+          <FormControl>
+            <Slider
+              min={min}
+              max={max}
+              step={step}
+              value={[field.value]}
+              onValueChange={(vals) => field.onChange(vals[0])}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 
@@ -152,10 +197,6 @@ function RecommendationSkeleton() {
       <div>
         <Skeleton className="h-7 w-48 mb-2" />
         <Skeleton className="h-16 w-full" />
-      </div>
-      <div>
-        <Skeleton className="h-7 w-48 mb-2" />
-        <Skeleton className="h-20 w-full" />
       </div>
       <div>
         <Skeleton className="h-7 w-48 mb-2" />
